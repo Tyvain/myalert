@@ -1,20 +1,20 @@
 package hello;
 
-import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.StyleSheet;
-import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
 
-import java.util.Arrays;
 import java.util.List;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Route
 @StyleSheet("frontend://styles.css")
 public class MainView extends VerticalLayout {
-    List<String> colors = Arrays.asList("w3-flat-turquoise",
+    List<String> colors = Stream.of("w3-flat-turquoise",
             "w3-flat-emerald",
             "w3-flat-peter-river",
             "w3-flat-amethyst",
@@ -33,36 +33,60 @@ public class MainView extends VerticalLayout {
             "w3-flat-pumpkin",
             "w3-flat-pomegranate",
             "w3-flat-silver",
-            "w3-flat-asbestos");
+            "w3-flat-asbestos").collect(Collectors.toList());
+    HorizontalLayout topLayout = new HorizontalLayout();
+    VerticalLayout lines = new VerticalLayout();
+    String color = "w3-flat-sun-flower";
+    PixelRepository pixelRepository;
 
-    public MainView() {
-        HorizontalLayout topLayout = new HorizontalLayout();
-        colors.stream().forEach(color -> addNewColorButton(topLayout, color));
-        Span main = new Span();
-        for (int i = 0; i < 1600; i++) {
-            if (i % 40 == 0) {
-                add(main);
-                main = new Span();
-            }
-            addButton(main);
-        }
-        add(topLayout, main);
+    public MainView(PixelRepository pixelRepository) {
+        this.pixelRepository = pixelRepository;
+        refreshPixels();
+        add(topLayout, lines);
     }
 
-    private void addNewColorButton(HorizontalLayout topLayout, String color) {
+    private void refreshPixels() {
+        topLayout.removeAll();
+        lines.removeAll();
+        HorizontalLayout line;
+        colors.stream().forEach(color -> addNewPaletteButton(topLayout, color));
+        int width = 40;
+        List<Pixel> pixels = pixelRepository.findAll();
+        for (int i = 0; i < width; ++i) {
+            int finalI = i;
+            line = new HorizontalLayout();
+            Supplier<Stream<Pixel>> pixelLine = () -> pixels.stream().filter(pixel -> pixel.getPosition().x == finalI);
+            for (int j = 0; j < width; ++j) {
+                int finalJ = j;
+                addNewColorButton(line, getPixel(pixelLine, finalJ));
+            }
+            lines.add(line);
+        }
+    }
+
+    private Pixel getPixel(Supplier<Stream<Pixel>> pixelLine, int finalJ) {
+        return pixelLine.get().filter(pixel -> pixel.getPosition().y == finalJ).findFirst().get();
+    }
+
+    private void addNewPaletteButton(HorizontalLayout topLayout, String color) {
         Button btn = new Button();
         btn.addClassName(color);
         topLayout.add(btn);
+        btn.addClickListener(event -> this.color = color);
     }
 
-    private void addButton(Span main) {
+    private void addNewColorButton(HorizontalLayout topLayout, Pixel pixel) {
         Button btn = new Button();
-        btn.addClickListener(event -> click(event));
-        main.add(btn);
+        btn.addClassName(pixel.color);
+        topLayout.add(btn);
+        btn.addClickListener(event -> save(pixel, btn));
     }
 
-    private void click(ClickEvent<Button> event) {
-        event.getSource()
-                .addClassName("w3-flat-asbestos");
+    private void save(Pixel pixel, Button btn) {
+        btn.removeClassName(pixel.getColor());
+        btn.addClassName(this.color);
+        pixel.setColor(this.color);
+        pixelRepository.save(pixel);
+//        refreshPixels();
     }
 }
