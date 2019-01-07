@@ -6,18 +6,22 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Route
 @StyleSheet("frontend://styles.css")
 public class MainView extends VerticalLayout {
-    List<String> colors = Stream.of("w3-flat-turquoise",
-            "w3-flat-emerald",
-            "w3-flat-peter-river",
-            "w3-flat-amethyst",
+    List<String> colors = Stream.of("_1abc9c",
+            "_22ecc71",
+            "_3498db",
+            "_9b59b6",
             "w3-flat-wet-asphalt",
             "w3-flat-green-sea",
             "w3-flat-nephritis",
@@ -33,16 +37,48 @@ public class MainView extends VerticalLayout {
             "w3-flat-pumpkin",
             "w3-flat-pomegranate",
             "w3-flat-silver",
-            "w3-flat-asbestos").collect(Collectors.toList());
+            "_7f8c8d").collect(Collectors.toList());
     HorizontalLayout topLayout = new HorizontalLayout();
     VerticalLayout lines = new VerticalLayout();
-    String color = "w3-flat-sun-flower";
-    PixelRepository pixelRepository;
+    String color = "#1abc9c";
+    CacheRepo cacheRepo;
 
     public MainView(PixelRepository pixelRepository) {
-        this.pixelRepository = pixelRepository;
+        cacheRepo = new CacheRepo(pixelRepository);
         refreshPixels();
         add(topLayout, lines);
+    }
+
+    private void draw() {
+        // Constructs a BufferedImage of one of the predefined image types.
+        BufferedImage bufferedImage = new BufferedImage(400, 400, BufferedImage.TYPE_INT_RGB);
+        // Create a graphics which can be used to draw into the buffered image
+        Graphics2D g2d = bufferedImage.createGraphics();
+        List<Pixel> pixels = cacheRepo.findAll();
+        pixels.stream().forEach(pixel -> {
+            g2d.setColor(getColorFromPixel(pixel));
+            g2d.fillRect(pixel.getPosition().x * (400/Application.SIZE), pixel.getPosition().y * (400/Application.SIZE), 20, 20);
+        });
+
+        g2d.dispose();
+        // Save as PNG
+        File file = new File("myimage.png");
+        try {
+            ImageIO.write(bufferedImage, "png", file);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private Color getColorFromPixel(Pixel pixel) {
+        return hex2Rgb(pixel.getColor());
+    }
+
+    public static Color hex2Rgb(String colorStr) {
+        return new Color(
+                Integer.valueOf( colorStr.substring( 1, 3 ), 16 ),
+                Integer.valueOf( colorStr.substring( 3, 5 ), 16 ),
+                Integer.valueOf( colorStr.substring( 5, 7 ), 16 ) );
     }
 
     private void refreshPixels() {
@@ -50,22 +86,29 @@ public class MainView extends VerticalLayout {
         lines.removeAll();
         HorizontalLayout line;
         colors.stream().forEach(color -> addNewPaletteButton(topLayout, color));
-        int width = 40;
-        List<Pixel> pixels = pixelRepository.findAll();
-        for (int i = 0; i < width; ++i) {
-            int finalI = i;
+        topLayout.add(new Button("save", event -> draw()));
+        List<Pixel> pixels = cacheRepo.findAll();
+        for (int x = 0; x < Application.SIZE; ++x) {
+            int finalX = x;
             line = new HorizontalLayout();
-            Supplier<Stream<Pixel>> pixelLine = () -> pixels.stream().filter(pixel -> pixel.getPosition().x == finalI);
-            for (int j = 0; j < width; ++j) {
-                int finalJ = j;
-                addNewColorButton(line, getPixel(pixelLine, finalJ));
+            List<Pixel> pixelLine = getPixelsByLine(pixels, finalX);
+            for (int y = 0; y < Application.SIZE; ++y) {
+                int finalY = y;
+                Pixel pix = getPixelInLine(pixelLine, finalY);
+                addNewColorButton(line, pix);
             }
             lines.add(line);
         }
     }
 
-    private Pixel getPixel(Supplier<Stream<Pixel>> pixelLine, int finalJ) {
-        return pixelLine.get().filter(pixel -> pixel.getPosition().y == finalJ).findFirst().get();
+    private List<Pixel> getPixelsByLine(List<Pixel> pixels, int lineNumber) {
+        return pixels.stream()
+                .filter(pixel -> pixel.getPosition().x == lineNumber)
+                .collect(Collectors.toList());
+    }
+
+    private Pixel getPixelInLine(List<Pixel> pixelLine, int y) {
+        return pixelLine.stream().filter(pixel -> pixel.getPosition().y == y).findFirst().get();
     }
 
     private void addNewPaletteButton(HorizontalLayout topLayout, String color) {
@@ -86,7 +129,6 @@ public class MainView extends VerticalLayout {
         btn.removeClassName(pixel.getColor());
         btn.addClassName(this.color);
         pixel.setColor(this.color);
-        pixelRepository.save(pixel);
-//        refreshPixels();
+        cacheRepo.save(pixel);
     }
 }
