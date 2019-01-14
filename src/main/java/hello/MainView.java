@@ -31,17 +31,16 @@ public class MainView extends VerticalLayout {
 
     private void draw() {
         // Constructs a BufferedImage of one of the predefined image types.
-        BufferedImage bufferedImage = new BufferedImage(408, 408, BufferedImage.TYPE_INT_RGB);
+        BufferedImage bufferedImage = new BufferedImage(400, 400, BufferedImage.TYPE_INT_RGB);
         // Create a graphics which can be used to draw into the buffered image
         Graphics2D g2d = bufferedImage.createGraphics();
-        g2d.rotate(Math.toRadians(270), 204, 204);
+        g2d.rotate(Math.toRadians(270), 200, 200);
         List<Pixel> pixels = cacheRepo.findAll();
         pixels.stream().forEach(pixel -> {
             g2d.setColor(getColorFromPixel(pixel));
-            g2d.fillRect(getPos(pixel.getPosition().x), getPos(pixel.getPosition().y), 20, 20);
+            g2d.fillRect(getPos(pixel.getPosition().x), getPos(pixel.getPosition().y), 10, 10);
         });
         g2d.dispose();
-
         // Save as PNG
         File file = new File("myimage.png");
         try {
@@ -61,9 +60,9 @@ public class MainView extends VerticalLayout {
 
     public static Color hex2Rgb(String colorStr) {
         return new Color(
-                Integer.valueOf( colorStr.substring( 1, 3 ), 16 ),
-                Integer.valueOf( colorStr.substring( 3, 5 ), 16 ),
-                Integer.valueOf( colorStr.substring( 5, 7 ), 16 ) );
+                Integer.valueOf(colorStr.substring(1, 3), 16),
+                Integer.valueOf(colorStr.substring(3, 5), 16),
+                Integer.valueOf(colorStr.substring(5, 7), 16));
     }
 
     private void refreshPixels() {
@@ -72,7 +71,7 @@ public class MainView extends VerticalLayout {
         HorizontalLayout line;
         buildPalette();
         List<Pixel> pixels = cacheRepo.findAll();
-        for (int y = Application.SIZE-1; y >= 0 ; --y) {
+        for (int y = Application.SIZE - 1; y >= 0; --y) {
             int finalY = y;
             line = new HorizontalLayout();
             List<Pixel> pixelLine = getPixelsByLine(pixels, finalY);
@@ -89,17 +88,12 @@ public class MainView extends VerticalLayout {
         HorizontalLayout hl = new HorizontalLayout();
         paletteLayout.add(hl);
         for (int i = 0; i < MyPalette.getColors().toArray().length; i++) {
-            if (i%40 == 0 ) {
-                System.out.println("2222222222");
+            if (i % 40 == 0) {
                 hl = new HorizontalLayout();
                 paletteLayout.add(hl);
             }
-
-             addNewPaletteButton(hl, MyPalette.getColors().get(i));
-            System.out.println("i : " + i + " -> " + (i%39 == 0));
-
+            addNewPaletteButton(hl, MyPalette.getColors().get(i));
         }
-
     }
 
     private List<Pixel> getPixelsByLine(List<Pixel> pixels, int lineNumber) {
