@@ -13,31 +13,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Route
 @StyleSheet("frontend://styles.css")
 public class MainView extends VerticalLayout {
-    List<String> colors = Stream.of("_1abc9c",
-            "_22ecc71",
-            "_3498db",
-            "_9b59b6",
-            "w3-flat-wet-asphalt",
-            "w3-flat-green-sea",
-            "w3-flat-nephritis",
-            "w3-flat-belize-hole",
-            "w3-flat-wisteria",
-            "w3-flat-midnight-blue",
-            "w3-flat-sun-flower",
-            "w3-flat-carrot",
-            "w3-flat-alizarin",
-            "w3-flat-clouds",
-            "w3-flat-concrete",
-            "w3-flat-orange",
-            "w3-flat-pumpkin",
-            "w3-flat-pomegranate",
-            "w3-flat-silver",
-            "_7f8c8d").collect(Collectors.toList());
+    VerticalLayout paletteLayout = new VerticalLayout();
     HorizontalLayout topLayout = new HorizontalLayout();
     VerticalLayout lines = new VerticalLayout();
     String color = "#1abc9c";
@@ -46,21 +26,22 @@ public class MainView extends VerticalLayout {
     public MainView(PixelRepository pixelRepository) {
         cacheRepo = new CacheRepo(pixelRepository);
         refreshPixels();
-        add(topLayout, lines);
+        add(paletteLayout, topLayout, lines, new Button("", event -> draw()));
     }
 
     private void draw() {
         // Constructs a BufferedImage of one of the predefined image types.
-        BufferedImage bufferedImage = new BufferedImage(400, 400, BufferedImage.TYPE_INT_RGB);
+        BufferedImage bufferedImage = new BufferedImage(408, 408, BufferedImage.TYPE_INT_RGB);
         // Create a graphics which can be used to draw into the buffered image
         Graphics2D g2d = bufferedImage.createGraphics();
+        g2d.rotate(Math.toRadians(270), 204, 204);
         List<Pixel> pixels = cacheRepo.findAll();
         pixels.stream().forEach(pixel -> {
             g2d.setColor(getColorFromPixel(pixel));
-            g2d.fillRect(pixel.getPosition().x * (400/Application.SIZE), pixel.getPosition().y * (400/Application.SIZE), 20, 20);
+            g2d.fillRect(getPos(pixel.getPosition().x), getPos(pixel.getPosition().y), 20, 20);
         });
-
         g2d.dispose();
+
         // Save as PNG
         File file = new File("myimage.png");
         try {
@@ -68,6 +49,10 @@ public class MainView extends VerticalLayout {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private int getPos(int x) {
+        return x * (400 / Application.SIZE);
     }
 
     private Color getColorFromPixel(Pixel pixel) {
@@ -85,20 +70,36 @@ public class MainView extends VerticalLayout {
         topLayout.removeAll();
         lines.removeAll();
         HorizontalLayout line;
-        colors.stream().forEach(color -> addNewPaletteButton(topLayout, color));
-        topLayout.add(new Button("save", event -> draw()));
+        buildPalette();
         List<Pixel> pixels = cacheRepo.findAll();
-        for (int x = 0; x < Application.SIZE; ++x) {
-            int finalX = x;
+        for (int y = Application.SIZE-1; y >= 0 ; --y) {
+            int finalY = y;
             line = new HorizontalLayout();
-            List<Pixel> pixelLine = getPixelsByLine(pixels, finalX);
-            for (int y = 0; y < Application.SIZE; ++y) {
-                int finalY = y;
-                Pixel pix = getPixelInLine(pixelLine, finalY);
+            List<Pixel> pixelLine = getPixelsByLine(pixels, finalY);
+            for (int x = 0; x < Application.SIZE; ++x) {
+                int finalX = x;
+                Pixel pix = getPixelInLine(pixelLine, finalX);
                 addNewColorButton(line, pix);
             }
             lines.add(line);
         }
+    }
+
+    private void buildPalette() {
+        HorizontalLayout hl = new HorizontalLayout();
+        paletteLayout.add(hl);
+        for (int i = 0; i < MyPalette.getColors().toArray().length; i++) {
+            if (i%40 == 0 ) {
+                System.out.println("2222222222");
+                hl = new HorizontalLayout();
+                paletteLayout.add(hl);
+            }
+
+             addNewPaletteButton(hl, MyPalette.getColors().get(i));
+            System.out.println("i : " + i + " -> " + (i%39 == 0));
+
+        }
+
     }
 
     private List<Pixel> getPixelsByLine(List<Pixel> pixels, int lineNumber) {
