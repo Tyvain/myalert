@@ -9,6 +9,6 @@ public class MainView extends VerticalLayout {
 
 
     public MainView() {
-            add(new Label("Hello world"));
+            add(new Label("coucou unc !"));
     }
 }
