@@ -1,17 +1,16 @@
-package nc.unc;
+package io.ramonak.spring;
+
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Rule;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
 
 import com.vaadin.flow.theme.AbstractTheme;
 import com.vaadin.testbench.ScreenshotOnFailureRule;
 import com.vaadin.testbench.TestBench;
 import com.vaadin.testbench.parallel.ParallelTest;
-import io.github.bonigarcia.wdm.WebDriverManager;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.chrome.ChromeDriver;
 
 /**
  * Base class for TestBench IntegrationTests on chrome.
@@ -38,17 +37,12 @@ public abstract class AbstractViewTest extends ParallelTest {
             false);
 
     public AbstractViewTest() {
-        this("", By.cssSelector("#outlet > :first-child"));
+        this("", By.tagName("body"));
     }
 
     protected AbstractViewTest(String route, By rootSelector) {
         this.route = route;
         this.rootSelector = rootSelector;
-    }
-
-    @BeforeClass
-    public static void setupClass() {
-        WebDriverManager.chromedriver().setup();
     }
 
     @Before
